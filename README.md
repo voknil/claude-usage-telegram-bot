@@ -16,7 +16,7 @@ The message also includes progress bars, updated time, source, and an inline ref
 - One persistent Telegram message, edited in place.
 - `↻ Обновить сейчас ✅` refresh button.
 - Button switches to `⏳ Обновляю...` while refresh is running.
-- Auto-refresh via launchd, default template is once per minute.
+- Auto-refresh via launchd on macOS or systemd user timers on Linux.
 - Reads Claude Code usage from `claude /usage`.
 - Optional official `rate_limits` capture via Claude Code `statusLine`.
 - Optional Anthropic OAuth usage API fallback if your local credentials work.
@@ -24,7 +24,7 @@ The message also includes progress bars, updated time, source, and an inline ref
 
 ## Requirements
 
-- macOS for the provided launchd templates.
+- macOS or Linux.
 - `bash`, `curl`, `jq`, `python3`.
 - Claude Code CLI available as `claude`.
 - A Telegram bot token from BotFather.
@@ -60,7 +60,38 @@ Start callback polling for the refresh button:
 ./scripts/telegram-claude-usage-callbacks.sh
 ```
 
-## launchd
+## Linux systemd
+
+The systemd units are user services. Copy the templates and replace `REPO_DIR` with the absolute path to this repo:
+
+```bash
+mkdir -p ~/.config/systemd/user
+cp systemd/claude-usage-status.service ~/.config/systemd/user/
+cp systemd/claude-usage-status.timer ~/.config/systemd/user/
+cp systemd/claude-usage-callbacks.service ~/.config/systemd/user/
+
+repo_dir="$PWD"
+sed -i "s|REPO_DIR|$repo_dir|g" ~/.config/systemd/user/claude-usage-status.service
+sed -i "s|REPO_DIR|$repo_dir|g" ~/.config/systemd/user/claude-usage-callbacks.service
+```
+
+Enable:
+
+```bash
+systemctl --user daemon-reload
+systemctl --user enable --now claude-usage-status.timer
+systemctl --user enable --now claude-usage-callbacks.service
+```
+
+The status timer runs every 60 seconds.
+
+If your user services stop when you log out, enable lingering:
+
+```bash
+loginctl enable-linger "$USER"
+```
+
+## macOS launchd
 
 Copy the templates and replace `REPO_DIR` with the absolute path to this repo:
 

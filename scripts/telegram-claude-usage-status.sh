@@ -42,6 +42,11 @@ telegram_raw() {
   curl -sS -X POST "$api/$method" "$@"
 }
 
+mtime_epoch() {
+  local file="$1"
+  stat -f '%m' "$file" 2>/dev/null || stat -c '%Y' "$file" 2>/dev/null || echo 0
+}
+
 state_chat_id="$(jq -r '.chat_id // empty' "$state_file" 2>/dev/null || true)"
 state_message_id="$(jq -r '.message_id // empty' "$state_file" 2>/dev/null || true)"
 chat_id="${CLAUDE_STATUS_CHAT_ID:-$state_chat_id}"
@@ -73,7 +78,7 @@ fi
 
 usage_age_seconds=999999
 if [[ -f "$usage_file" ]]; then
-  usage_mtime="$(stat -f '%m' "$usage_file" 2>/dev/null || echo 0)"
+  usage_mtime="$(mtime_epoch "$usage_file")"
   usage_age_seconds="$(( $(date +%s) - usage_mtime ))"
 fi
 
@@ -83,7 +88,7 @@ fi
 
 usage_age_seconds=999999
 if [[ -f "$usage_file" ]]; then
-  usage_mtime="$(stat -f '%m' "$usage_file" 2>/dev/null || echo 0)"
+  usage_mtime="$(mtime_epoch "$usage_file")"
   usage_age_seconds="$(( $(date +%s) - usage_mtime ))"
 fi
 
